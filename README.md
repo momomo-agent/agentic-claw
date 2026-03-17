@@ -1,6 +1,6 @@
 # agentic-claw
 
-AI agent runtime + CLI — `createClaw()` wires up agentic-core + agentic-memory into a living agent.
+AI agent runtime — `createClaw()` wires up agentic-core + agentic-memory into a living agent.
 
 Part of the [agentic](https://momomo-agent.github.io/agentic/) family.
 
@@ -10,27 +10,9 @@ Part of the [agentic](https://momomo-agent.github.io/agentic/) family.
 npm install agentic-claw agentic-core agentic-memory
 ```
 
-## CLI
+> Looking for the CLI? See [claw-cli](https://github.com/momomo-agent/claw-cli).
 
-```bash
-# One-shot
-claw "What is quantum computing?"
-
-# Interactive REPL
-claw -i
-
-# Configure API key
-claw --config
-
-# Pipe mode
-cat report.md | claw "summarize this"
-
-# Options
-claw --provider openai --model gpt-4 "question"
-claw --json "extract structured data"
-```
-
-## Library
+## Quick Start
 
 ```js
 const { createClaw } = require('agentic-claw')
@@ -87,7 +69,7 @@ await claw.chat('How do qubits work?')
 // Heartbeat — periodic check-in
 claw.heartbeat(() => {
   console.log('Still alive')
-}, 60000) // every 60s
+}, 60000)
 
 // Schedule — recurring tasks
 claw.schedule('5m', () => {
@@ -106,7 +88,7 @@ claw.destroy()
 ## Architecture
 
 ```
-agentic-claw
+agentic-claw (runtime)
   ├── agentic-core   — LLM engine (calls, tools, schema, stream)
   └── agentic-memory — Memory (conversation + knowledge)
 
