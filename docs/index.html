@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agentic-claw — AI agent runtime + CLI</title>
+  <meta name="description" content="Wire up agentic-core + agentic-memory into a living AI agent. One function. One command.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050505;
+      --surface: #0c0c0c;
+      --border: #1a1a1a;
+      --text: #e8e8e8;
+      --text-2: #888;
+      --text-3: #555;
+      --accent: #e94560;
+      --accent-dim: #e9456015;
+      --accent-mid: #e9456040;
+      --code-bg: #0f0f0f;
+      --mono: 'JetBrains Mono', 'SF Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero { padding: 120px 0 80px; text-align: center; }
+    .hero h1 {
+      font-family: var(--mono); font-size: 48px; font-weight: 600;
+      letter-spacing: -2px; margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero .tagline { font-size: 20px; color: var(--text-2); margin-bottom: 40px; }
+    .hero .install {
+      display: inline-block; background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 24px; font-family: var(--mono); font-size: 14px;
+      color: var(--text-2);
+    }
+    .hero .install span { color: var(--accent); }
+
+    /* Sections */
+    section { padding: 60px 0; border-top: 1px solid var(--border); }
+    section h2 {
+      font-family: var(--mono); font-size: 24px; font-weight: 600;
+      margin-bottom: 24px; color: var(--text);
+    }
+    section h2 span { color: var(--accent); }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px 24px; overflow-x: auto;
+      font-family: var(--mono); font-size: 13px; line-height: 1.7;
+      margin-bottom: 24px;
+    }
+    .comment { color: var(--text-3); }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .func { color: #82aaff; }
+    .num { color: #f78c6c; }
+
+    /* CLI demo */
+    .cli-demo {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 32px;
+    }
+    .cli-demo .prompt { color: var(--accent); }
+    .cli-demo .output { color: var(--text-2); margin-top: 8px; }
+    .cli-demo .dim { color: var(--text-3); }
+
+    /* Architecture */
+    .arch {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 32px; text-align: center;
+      font-family: var(--mono); font-size: 14px; line-height: 2;
+    }
+    .arch .layer { color: var(--accent); font-weight: 600; }
+    .arch .dim { color: var(--text-3); }
+
+    /* Features */
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .feature {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px;
+    }
+    .feature h3 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
+    .feature p { font-size: 13px; color: var(--text-2); }
+
+    /* Footer */
+    footer {
+      padding: 40px 0; border-top: 1px solid var(--border);
+      text-align: center; color: var(--text-3); font-size: 13px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* Links */
+    .links { display: flex; gap: 16px; justify-content: center; margin-top: 24px; }
+    .links a {
+      color: var(--text-2); text-decoration: none; font-size: 14px;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .links a:hover { color: var(--accent); border-color: var(--accent-mid); }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 32px; }
+      .features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="hero">
+    <h1>agentic-<span>claw</span></h1>
+    <div class="tagline">AI agent runtime + CLI.<br>One function. One command.</div>
+    <div class="install">npm install <span>agentic-claw</span></div>
+    <div class="links">
+      <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a>
+      <a href="https://www.npmjs.com/package/agentic-claw">npm</a>
+      <a href="https://momomo-agent.github.io/agentic/">agentic family</a>
+    </div>
+  </div>
+
+  <section>
+    <h2><span>$</span> CLI</h2>
+    <div class="cli-demo">
+      <div><span class="prompt">$</span> claw "What is quantum computing?"</div>
+      <div class="output">Quantum computing uses qubits that can exist in superposition...</div>
+      <br>
+      <div><span class="prompt">$</span> claw -i</div>
+      <div class="dim">claw v0.1.0 — type /quit to exit</div>
+      <div><span class="prompt">&gt;</span> Hello, who are you?</div>
+      <div class="output">I'm your AI assistant, running on agentic-core.</div>
+      <div><span class="prompt">&gt;</span> What did I just ask?</div>
+      <div class="output">You asked "Hello, who are you?" — I remember our conversation.</div>
+      <br>
+      <div><span class="prompt">$</span> cat report.md | claw "summarize"</div>
+      <div class="output">The report covers three key areas: ...</div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span>#</span> Library</h2>
+    <pre><span class="keyword">const</span> { createClaw } = <span class="func">require</span>(<span class="string">'agentic-claw'</span>)
+
+<span class="keyword">const</span> claw = <span class="func">createClaw</span>({
+  apiKey: <span class="string">'sk-...'</span>,
+  provider: <span class="string">'anthropic'</span>,
+  knowledge: <span class="keyword">true</span>,
+})
+
+<span class="comment">// Teach it something</span>
+<span class="keyword">await</span> claw.<span class="func">learn</span>(<span class="string">'docs'</span>, longDocument)
+
+<span class="comment">// Chat — auto: memory → recall → LLM → store</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> claw.<span class="func">chat</span>(<span class="string">'What does the doc say?'</span>)
+
+<span class="comment">// Multi-session</span>
+<span class="keyword">const</span> alice = claw.<span class="func">session</span>(<span class="string">'alice'</span>)
+<span class="keyword">const</span> bob = claw.<span class="func">session</span>(<span class="string">'bob'</span>)
+<span class="keyword">await</span> alice.<span class="func">chat</span>(<span class="string">'Hi'</span>)  <span class="comment">// isolated conversation</span></pre>
+  </section>
+
+  <section>
+    <h2><span>#</span> Features</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>🧠 Auto Memory</h3>
+        <p>Conversations automatically stored and trimmed. Multi-session with isolation.</p>
+      </div>
+      <div class="feature">
+        <h3>🔍 Knowledge</h3>
+        <p>Learn documents, recall relevant context. Local TF-IDF or OpenAI embeddings.</p>
+      </div>
+      <div class="feature">
+        <h3>🛠 Tools</h3>
+        <p>Custom tool registration. Built-in search and code execution.</p>
+      </div>
+      <div class="feature">
+        <h3>⚡ Streaming</h3>
+        <p>Real-time token streaming with proxy support for GFW.</p>
+      </div>
+      <div class="feature">
+        <h3>💓 Heartbeat</h3>
+        <p>Periodic callbacks and scheduled tasks. Your agent stays alive.</p>
+      </div>
+      <div class="feature">
+        <h3>📦 Zero Deps</h3>
+        <p>Peers: agentic-core + agentic-memory. No transitive dependencies.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span>#</span> Architecture</h2>
+    <div class="arch">
+      <div class="layer">Your App / CLI / Web Demo / Paw</div>
+      <div class="dim">↓</div>
+      <div class="layer">agentic-claw</div>
+      <div>createClaw() · chat() · session() · heartbeat()</div>
+      <div class="dim">↓</div>
+      <div style="display: flex; justify-content: center; gap: 40px;">
+        <div><span class="layer">agentic-core</span><br><span class="dim">LLM · tools · schema</span></div>
+        <div><span class="layer">agentic-memory</span><br><span class="dim">conversation · knowledge</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="container">
+    <a href="https://momomo-agent.github.io/agentic/">agentic</a> family — zero dependency AI infrastructure
+  </div>
+</footer>
+
+</body>
+</html>

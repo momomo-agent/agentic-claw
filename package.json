@@ -1,0 +1,20 @@
+{
+  "name": "agentic-claw",
+  "version": "0.1.0",
+  "description": "AI agent runtime + CLI — createClaw() wires up agentic-core + agentic-memory into a living agent.",
+  "main": "claw.js",
+  "bin": {
+    "claw": "bin/claw.js"
+  },
+  "files": ["claw.js", "bin/claw.js", "README.md"],
+  "keywords": ["agent", "ai", "claw", "runtime", "cli", "llm", "zero-dependency"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/momomo-agent/agentic-claw.git"
+  },
+  "peerDependencies": {
+    "agentic-core": ">=0.2.0",
+    "agentic-memory": ">=0.2.0"
+  }
+}
