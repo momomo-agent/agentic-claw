@@ -139,7 +139,17 @@
       return mem
     }
 
-    async function _chat(sessionMem, input, emit) {
+    async function _chat(sessionMem, input, emitOrOpts, maybeEmit) {
+      // Support: _chat(mem, input, emit) or _chat(mem, input, opts, emit)
+      let chatOpts = {}
+      let emit
+      if (typeof emitOrOpts === 'function') {
+        emit = emitOrOpts
+      } else if (emitOrOpts && typeof emitOrOpts === 'object') {
+        chatOpts = emitOrOpts
+        emit = maybeEmit
+      }
+
       events.emit('message', { role: 'user', content: input })
 
       // Store user message
@@ -180,8 +190,9 @@
           proxyUrl: proxyUrl || undefined,
           history: sessionMem.history(),
           system: sys || undefined,
-          tools,
+          tools: chatOpts.tools || tools,
           stream,
+          ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
         }, emitFn)
 
         const answer = result.answer || result.content || ''
@@ -207,16 +218,16 @@
     const defaultSession = _getSession('default')
 
     const claw = {
-      /** Chat — send a message, get a response */
-      async chat(input, emit) {
-        return _chat(defaultSession, input, emit)
+      /** Chat — send a message, get a response. Options: { tools, searchApiKey } */
+      async chat(input, optsOrEmit, maybeEmit) {
+        return _chat(defaultSession, input, optsOrEmit, maybeEmit)
       },
 
       /** Create/get a named session */
       session(id) {
         const mem = _getSession(id)
         return {
-          async chat(input, emit) { return _chat(mem, input, emit) },
+          async chat(input, optsOrEmit, maybeEmit) { return _chat(mem, input, optsOrEmit, maybeEmit) },
           memory: mem,
           id,
         }
