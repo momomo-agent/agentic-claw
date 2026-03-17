@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>agentic-claw — AI agent runtime + CLI</title>
-  <meta name="description" content="Wire up agentic-core + agentic-memory into a living agent. One function. One command. Zero dependencies.">
+  <title>agentic-claw — AI agent runtime</title>
+  <meta name="description" content="Wire up agentic-core + agentic-memory into a living agent. One function. Zero dependencies.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -267,9 +267,9 @@
 <nav>
   <div class="logo"><span>🦀</span> agentic-claw</div>
   <div class="links">
-    <a href="#cli">CLI</a>
     <a href="#usage">Usage</a>
     <a href="#features">Features</a>
+    <a href="https://github.com/momomo-agent/claw-cli">CLI</a>
     <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a>
   </div>
 </nav>
@@ -279,16 +279,16 @@
   <div class="tagline fu">Your agent,<br><em>ready to go</em></div>
   <p class="sub fu fu1">
     Wire up agentic-core + agentic-memory into a living agent.<br>
-    CLI included. Multi-session. Knowledge-aware.
+    Multi-session. Knowledge-aware. Lifecycle built in.
   </p>
   <div class="hero-stats fu fu2">
     <div class="stat"><div class="val">~3KB</div><div class="lbl">gzip</div></div>
     <div class="stat"><div class="val">0</div><div class="lbl">dependencies</div></div>
-    <div class="stat"><div class="val">1</div><div class="lbl">command</div></div>
+    <div class="stat"><div class="val">1</div><div class="lbl">function</div></div>
   </div>
   <div class="hero-actions fu fu3">
     <a href="https://github.com/momomo-agent/agentic-claw" class="btn btn-primary">GitHub</a>
-    <a href="#cli" class="btn btn-ghost">See CLI ↓</a>
+    <a href="#usage" class="btn btn-ghost">See Usage ↓</a>
   </div>
   <div class="install fu fu4" onclick="navigator.clipboard.writeText('npm i agentic-claw');this.querySelector('.cp').textContent='Copied!'">
     <code>$ <b>npm</b> i agentic-claw agentic-core agentic-memory</code>
@@ -296,10 +296,10 @@
   </div>
 </section>
 
-<!-- CLI -->
+<!-- CLI (claw-cli) -->
 <section class="cli-section wrap" id="cli">
-  <h2>CLI — one command</h2>
-  <p class="sub-h">Interactive REPL, one-shot, pipe mode. Just works.</p>
+  <h2>claw-cli — <a href="https://github.com/momomo-agent/claw-cli" style="color:var(--accent)">separate package</a></h2>
+  <p class="sub-h">First product built on agentic-claw. Install: <code style="color:var(--accent)">npm i -g claw-cli</code></p>
 
   <div class="terminal">
     <div class="terminal-header">
@@ -485,7 +485,7 @@ claw.<span class="fn">on</span>(<span class="str">'error'</span>, e <span class=
     <div class="cmp lb">CLI</div>
     <div class="cmp lo">None</div>
     <div class="cmp lo">None</div>
-    <div class="cmp hi">Built in</div>
+    <div class="cmp hi"><a href="https://github.com/momomo-agent/claw-cli">claw-cli</a></div>
 
     <div class="cmp lb">Time to first agent</div>
     <div class="cmp lo">~1 hour</div>
