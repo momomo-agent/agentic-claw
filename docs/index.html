@@ -275,49 +275,26 @@
     <div class="code-body">
 <span class="kw">const</span> { <span class="fn">createClaw</span> } = <span class="fn">require</span>(<span class="str">'agentic-claw'</span>)
 
-<span class="kw">const</span> claw = <span class="fn">createClaw</span>({ <span class="prop">apiKey</span>: <span class="str">'sk-...'</span> })
-
-<span class="kw">const</span> r = <span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'What is quantum computing?'</span>)
-<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'Tell me more'</span>)  <span class="cmt">// remembers context</span></div>
-  </div>
-
-  <div class="code-block" style="margin-top: 16px;">
-    <div class="code-header">Multi-session + Knowledge</div>
-    <div class="code-body">
 <span class="kw">const</span> claw = <span class="fn">createClaw</span>({
   <span class="prop">apiKey</span>: <span class="str">'sk-...'</span>,
-  <span class="prop">knowledge</span>: <span class="typ">true</span>,
 })
 
-<span class="cmt">// Teach it — knowledge shared across sessions</span>
+<span class="cmt">// Chat with memory</span>
+<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'What is quantum computing?'</span>)
+<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'Tell me more'</span>)  <span class="cmt">// remembers</span>
+
+<span class="cmt">// Knowledge</span>
 <span class="kw">await</span> claw.<span class="fn">learn</span>(<span class="str">'docs'</span>, longDocument)
+<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'Summarize the doc'</span>)
 
-<span class="cmt">// Chat — auto: recall → LLM → store</span>
-<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'What does the doc say about X?'</span>)
-
-<span class="cmt">// Multi-session — isolated conversations</span>
+<span class="cmt">// Multi-session</span>
 <span class="kw">const</span> alice = claw.<span class="fn">session</span>(<span class="str">'alice'</span>)
 <span class="kw">const</span> bob = claw.<span class="fn">session</span>(<span class="str">'bob'</span>)
-<span class="kw">await</span> alice.<span class="fn">chat</span>(<span class="str">'My name is Alice'</span>)
-<span class="kw">await</span> bob.<span class="fn">chat</span>(<span class="str">"What's Alice's name?"</span>)  <span class="cmt">// doesn't know</span></div>
-  </div>
 
-  <div class="code-block" style="margin-top: 16px;">
-    <div class="code-header">Lifecycle — heartbeat + schedule</div>
-    <div class="code-body">
-<span class="cmt">// Heartbeat — periodic check-in</span>
-claw.<span class="fn">heartbeat</span>(() <span class="kw">=></span> {
-  console.<span class="fn">log</span>(<span class="str">'Still alive'</span>)
-}, <span class="typ">60000</span>)
-
-<span class="cmt">// Schedule — recurring tasks</span>
-claw.<span class="fn">schedule</span>(<span class="str">'5m'</span>, () <span class="kw">=></span> {
-  console.<span class="fn">log</span>(<span class="str">'Every 5 minutes'</span>)
-})
-
-<span class="cmt">// Events</span>
-claw.<span class="fn">on</span>(<span class="str">'token'</span>, d <span class="kw">=></span> process.stdout.<span class="fn">write</span>(d.text))
-claw.<span class="fn">on</span>(<span class="str">'error'</span>, e <span class="kw">=></span> console.<span class="fn">error</span>(e))</div>
+<span class="cmt">// Lifecycle</span>
+claw.<span class="fn">heartbeat</span>(() =&gt; { ... }, <span class="typ">60000</span>)
+claw.<span class="fn">schedule</span>(<span class="str">'5m'</span>, () =&gt; { ... })
+claw.<span class="fn">on</span>(<span class="str">'token'</span>, d =&gt; process.stdout.<span class="fn">write</span>(d.text))</div>
   </div>
 </section>
 
