@@ -1,13 +1,10 @@
 {
   "name": "agentic-claw",
   "version": "0.1.0",
-  "description": "AI agent runtime + CLI — createClaw() wires up agentic-core + agentic-memory into a living agent.",
+  "description": "AI agent runtime — createClaw() wires up agentic-core + agentic-memory into a living agent.",
   "main": "claw.js",
-  "bin": {
-    "claw": "bin/claw.js"
-  },
-  "files": ["claw.js", "bin/claw.js", "README.md"],
-  "keywords": ["agent", "ai", "claw", "runtime", "cli", "llm", "zero-dependency"],
+  "files": ["claw.js", "README.md"],
+  "keywords": ["agent", "ai", "claw", "runtime", "llm", "zero-dependency"],
   "license": "MIT",
   "repository": {
     "type": "git",
