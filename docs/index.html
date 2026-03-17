@@ -4,221 +4,499 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>agentic-claw — AI agent runtime + CLI</title>
-  <meta name="description" content="Wire up agentic-core + agentic-memory into a living AI agent. One function. One command.">
+  <meta name="description" content="Wire up agentic-core + agentic-memory into a living agent. One function. One command. Zero dependencies.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --bg: #050505;
-      --surface: #0c0c0c;
-      --border: #1a1a1a;
-      --text: #e8e8e8;
+      --surface: #0a0a0a;
+      --surface-2: #0f0f0f;
+      --border: #1c1c1c;
+      --text: #e4e4e7;
       --text-2: #888;
       --text-3: #555;
       --accent: #e94560;
-      --accent-dim: #e9456015;
-      --accent-mid: #e9456040;
-      --code-bg: #0f0f0f;
-      --mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --accent-dim: #e9456012;
+      --green: #86efac;
+      --yellow: #f5c518;
+      --mono: 'DM Mono', 'SF Mono', monospace;
+      --serif: 'Newsreader', Georgia, serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--text);
-      line-height: 1.6; -webkit-font-smoothing: antialiased;
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      font-size: 14px;
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      opacity: 0.02; pointer-events: none; z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 0 24px; }
 
-    /* Hero */
-    .hero { padding: 120px 0 80px; text-align: center; }
-    .hero h1 {
-      font-family: var(--mono); font-size: 48px; font-weight: 600;
-      letter-spacing: -2px; margin-bottom: 16px;
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(5,5,5,0.88);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
     }
-    .hero h1 span { color: var(--accent); }
-    .hero .tagline { font-size: 20px; color: var(--text-2); margin-bottom: 40px; }
-    .hero .install {
-      display: inline-block; background: var(--code-bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 12px 24px; font-family: var(--mono); font-size: 14px;
-      color: var(--text-2);
-    }
-    .hero .install span { color: var(--accent); }
+    nav .logo { font-size: 14px; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 7px; }
+    nav .logo span { color: var(--accent); }
+    nav .links { display: flex; gap: 20px; font-size: 13px; }
+    nav .links a { color: var(--text-2); transition: color 0.15s; }
+    nav .links a:hover { color: var(--text); text-decoration: none; }
 
-    /* Sections */
-    section { padding: 60px 0; border-top: 1px solid var(--border); }
-    section h2 {
-      font-family: var(--mono); font-size: 24px; font-weight: 600;
-      margin-bottom: 24px; color: var(--text);
+    /* ── Hero ── */
+    .hero {
+      padding: 150px 0 80px;
+      text-align: center;
+      position: relative;
     }
-    section h2 span { color: var(--accent); }
-
-    /* Code blocks */
-    pre {
-      background: var(--code-bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 20px 24px; overflow-x: auto;
-      font-family: var(--mono); font-size: 13px; line-height: 1.7;
-      margin-bottom: 24px;
+    .hero::before {
+      content: ''; position: absolute;
+      top: 60px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+      pointer-events: none;
     }
-    .comment { color: var(--text-3); }
-    .keyword { color: #c792ea; }
-    .string { color: #c3e88d; }
-    .func { color: #82aaff; }
-    .num { color: #f78c6c; }
+    .hero .tagline {
+      font-family: var(--serif);
+      font-size: clamp(38px, 6vw, 60px);
+      line-height: 1.1;
+      font-weight: 400;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+    .hero .tagline em { font-style: italic; color: var(--accent); }
+    .hero .sub {
+      font-size: 14px; color: var(--text-2);
+      max-width: 480px; margin: 0 auto 36px;
+      line-height: 1.7;
+    }
 
-    /* CLI demo */
-    .cli-demo {
+    .hero-stats {
+      display: flex; gap: 32px; justify-content: center;
+      margin-bottom: 36px;
+    }
+    .stat { text-align: center; }
+    .stat .val { font-size: 22px; font-weight: 500; color: var(--green); }
+    .stat .lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    .hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 22px; border-radius: 7px;
+      font-size: 13px; font-family: var(--mono); font-weight: 500;
+      transition: all 0.15s; cursor: pointer; border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { opacity: 0.9; text-decoration: none; }
+    .btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border); }
+    .btn-ghost:hover { border-color: var(--text-3); color: var(--text); text-decoration: none; }
+
+    .install {
+      margin: 36px auto 0; max-width: 380px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; cursor: pointer; transition: border-color 0.15s;
+    }
+    .install:hover { border-color: var(--text-3); }
+    .install code { color: var(--text-2); }
+    .install code b { color: var(--accent); font-weight: 500; }
+    .install .cp { color: var(--text-3); font-size: 11px; }
+
+    /* ── CLI demo ── */
+    .cli-section { padding: 60px 0 80px; }
+    .cli-section h2 {
+      font-family: var(--serif); font-size: 30px; font-weight: 400;
+      letter-spacing: -0.5px; text-align: center; margin-bottom: 12px;
+    }
+    .cli-section .sub-h {
+      text-align: center; font-size: 13px; color: var(--text-3); margin-bottom: 32px;
+    }
+    .terminal {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 24px; margin-bottom: 32px;
+      border-radius: 10px; overflow: hidden;
     }
-    .cli-demo .prompt { color: var(--accent); }
-    .cli-demo .output { color: var(--text-2); margin-top: 8px; }
-    .cli-demo .dim { color: var(--text-3); }
+    .terminal-header {
+      padding: 10px 16px; background: #111; display: flex; align-items: center; gap: 8px;
+    }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dot.r { background: #ff5f57; }
+    .terminal-dot.y { background: #febc2e; }
+    .terminal-dot.g { background: #28c840; }
+    .terminal-title { font-size: 12px; color: var(--text-3); margin-left: 8px; }
+    .terminal-body {
+      padding: 20px 22px; font-size: 13px; line-height: 1.8;
+    }
+    .t-prompt { color: var(--accent); }
+    .t-cmd { color: var(--text); }
+    .t-out { color: var(--text-2); }
+    .t-dim { color: var(--text-3); }
+    .t-gap { display: block; height: 16px; }
 
-    /* Architecture */
-    .arch {
+    /* ── Code section ── */
+    .code-section { padding: 40px 0 80px; }
+    .code-section h2 {
+      font-family: var(--serif); font-size: 30px; font-weight: 400;
+      letter-spacing: -0.5px; text-align: center; margin-bottom: 12px;
+    }
+    .code-section .sub-h {
+      text-align: center; font-size: 13px; color: var(--text-3); margin-bottom: 32px;
+    }
+    .code-block {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px; background: #111; font-size: 12px; color: var(--text-3);
+    }
+    .code-body {
+      padding: 20px 22px; font-size: 13px; line-height: 1.75;
+      overflow-x: auto;
+    }
+    .kw { color: #c792ea; } .fn { color: var(--accent); }
+    .str { color: #c3e88d; } .cmt { color: #546e7a; }
+    .prop { color: #89ddff; } .typ { color: #ffcb6b; }
+
+    /* ── Architecture ── */
+    .arch-section { padding: 40px 0 80px; }
+    .arch-section h2 {
+      font-family: var(--serif); font-size: 30px; font-weight: 400;
+      letter-spacing: -0.5px; text-align: center; margin-bottom: 12px;
+    }
+    .arch-section .sub-h {
+      text-align: center; font-size: 13px; color: var(--text-3); margin-bottom: 32px;
+    }
+    .arch-diagram {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 32px; text-align: center;
-      font-family: var(--mono); font-size: 14px; line-height: 2;
+      border-radius: 10px; padding: 40px 32px; text-align: center;
     }
-    .arch .layer { color: var(--accent); font-weight: 600; }
-    .arch .dim { color: var(--text-3); }
-
-    /* Features */
-    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
-    .feature {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 20px;
+    .arch-layer {
+      display: inline-flex; gap: 8px; align-items: center; justify-content: center;
+      padding: 14px 24px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface-2); margin: 4px; transition: border-color 0.2s;
     }
-    .feature h3 { font-family: var(--mono); font-size: 14px; margin-bottom: 8px; }
-    .feature p { font-size: 13px; color: var(--text-2); }
+    .arch-layer:hover { border-color: var(--text-3); }
+    .arch-layer .al-icon { font-size: 18px; }
+    .arch-layer .al-name { font-size: 13px; font-weight: 500; }
+    .arch-layer .al-desc { font-size: 11px; color: var(--text-3); margin-left: 4px; }
+    .arch-layer.main { border-color: var(--accent); background: var(--accent-dim); }
+    .arch-row { margin: 12px 0; }
+    .arch-arrow { color: var(--text-3); font-size: 16px; display: block; margin: 8px 0; }
+    .arch-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
 
-    /* Footer */
+    /* ── Features ── */
+    .features { padding: 40px 0 80px; }
+    .features h2 {
+      font-family: var(--serif); font-size: 30px; font-weight: 400;
+      letter-spacing: -0.5px; text-align: center; margin-bottom: 40px;
+    }
+    .feat-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .feat {
+      background: var(--surface); padding: 28px 24px;
+    }
+    .feat h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .feat p { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+    /* ── Compare ── */
+    .compare { padding: 40px 0 80px; }
+    .compare h2 {
+      font-family: var(--serif); font-size: 30px; font-weight: 400;
+      letter-spacing: -0.5px; text-align: center; margin-bottom: 40px;
+    }
+    .cmp-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .cmp {
+      background: var(--surface); padding: 16px 18px; font-size: 13px;
+    }
+    .cmp.hd { background: #111; font-weight: 500; }
+    .cmp.hi { color: var(--green); }
+    .cmp.lo { color: var(--text-3); }
+    .cmp.lb { color: var(--text-2); }
+
+    /* ── Footer ── */
     footer {
-      padding: 40px 0; border-top: 1px solid var(--border);
-      text-align: center; color: var(--text-3); font-size: 13px;
+      border-top: 1px solid var(--border);
+      padding: 32px 0; text-align: center;
+      font-size: 12px; color: var(--text-3);
     }
-    footer a { color: var(--accent); text-decoration: none; }
 
-    /* Links */
-    .links { display: flex; gap: 16px; justify-content: center; margin-top: 24px; }
-    .links a {
-      color: var(--text-2); text-decoration: none; font-size: 14px;
-      padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-      transition: all 0.2s;
+    @media (max-width: 640px) {
+      .feat-grid { grid-template-columns: 1fr; }
+      .cmp-grid { grid-template-columns: 1fr 1fr; }
+      .hero-stats { gap: 20px; }
+      .arch-layer { padding: 10px 16px; }
     }
-    .links a:hover { color: var(--accent); border-color: var(--accent-mid); }
 
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 32px; }
-      .features { grid-template-columns: 1fr; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
+    .fu { animation: fadeUp 0.5s ease-out both; }
+    .fu1 { animation-delay: 0.08s; } .fu2 { animation-delay: 0.16s; }
+    .fu3 { animation-delay: 0.24s; } .fu4 { animation-delay: 0.32s; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="hero">
-    <h1>agentic-<span>claw</span></h1>
-    <div class="tagline">AI agent runtime + CLI.<br>One function. One command.</div>
-    <div class="install">npm install <span>agentic-claw</span></div>
-    <div class="links">
-      <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a>
-      <a href="https://www.npmjs.com/package/agentic-claw">npm</a>
-      <a href="https://momomo-agent.github.io/agentic/">agentic family</a>
+<nav>
+  <div class="logo"><span>🦀</span> agentic-claw</div>
+  <div class="links">
+    <a href="#cli">CLI</a>
+    <a href="#usage">Usage</a>
+    <a href="#features">Features</a>
+    <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero wrap">
+  <div class="tagline fu">Your agent,<br><em>ready to go</em></div>
+  <p class="sub fu fu1">
+    Wire up agentic-core + agentic-memory into a living agent.<br>
+    CLI included. Multi-session. Knowledge-aware.
+  </p>
+  <div class="hero-stats fu fu2">
+    <div class="stat"><div class="val">~3KB</div><div class="lbl">gzip</div></div>
+    <div class="stat"><div class="val">0</div><div class="lbl">dependencies</div></div>
+    <div class="stat"><div class="val">1</div><div class="lbl">command</div></div>
+  </div>
+  <div class="hero-actions fu fu3">
+    <a href="https://github.com/momomo-agent/agentic-claw" class="btn btn-primary">GitHub</a>
+    <a href="#cli" class="btn btn-ghost">See CLI ↓</a>
+  </div>
+  <div class="install fu fu4" onclick="navigator.clipboard.writeText('npm i agentic-claw');this.querySelector('.cp').textContent='Copied!'">
+    <code>$ <b>npm</b> i agentic-claw agentic-core agentic-memory</code>
+    <span class="cp">copy</span>
+  </div>
+</section>
+
+<!-- CLI -->
+<section class="cli-section wrap" id="cli">
+  <h2>CLI — one command</h2>
+  <p class="sub-h">Interactive REPL, one-shot, pipe mode. Just works.</p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span class="terminal-title">terminal</span>
+    </div>
+    <div class="terminal-body">
+<span class="t-prompt">$</span> <span class="t-cmd">claw "What is quantum computing?"</span>
+<span class="t-out">Quantum computing uses qubits that can exist in superposition,</span>
+<span class="t-out">enabling parallel computation at a fundamentally different scale...</span>
+<span class="t-gap"></span>
+<span class="t-prompt">$</span> <span class="t-cmd">claw -i</span>
+<span class="t-dim">claw v0.1.0 — type /quit to exit</span>
+<span class="t-gap"></span>
+<span class="t-prompt">&gt;</span> <span class="t-cmd">Tell me about qubits</span>
+<span class="t-out">Qubits are the fundamental unit of quantum information...</span>
+<span class="t-gap"></span>
+<span class="t-prompt">&gt;</span> <span class="t-cmd">What did I just ask?</span>
+<span class="t-out">You asked about qubits — I remember our conversation.</span>
+<span class="t-gap"></span>
+<span class="t-prompt">$</span> <span class="t-cmd">cat report.md | claw "summarize in 3 bullets"</span>
+<span class="t-out">• Revenue grew 23% year-over-year</span>
+<span class="t-out">• Cloud division became the largest segment</span>
+<span class="t-out">• Guidance raised for Q3</span>
     </div>
   </div>
+</section>
 
-  <section>
-    <h2><span>$</span> CLI</h2>
-    <div class="cli-demo">
-      <div><span class="prompt">$</span> claw "What is quantum computing?"</div>
-      <div class="output">Quantum computing uses qubits that can exist in superposition...</div>
-      <br>
-      <div><span class="prompt">$</span> claw -i</div>
-      <div class="dim">claw v0.1.0 — type /quit to exit</div>
-      <div><span class="prompt">&gt;</span> Hello, who are you?</div>
-      <div class="output">I'm your AI assistant, running on agentic-core.</div>
-      <div><span class="prompt">&gt;</span> What did I just ask?</div>
-      <div class="output">You asked "Hello, who are you?" — I remember our conversation.</div>
-      <br>
-      <div><span class="prompt">$</span> cat report.md | claw "summarize"</div>
-      <div class="output">The report covers three key areas: ...</div>
-    </div>
-  </section>
+<!-- Usage -->
+<section class="code-section wrap" id="usage">
+  <h2>Five lines to an agent</h2>
+  <p class="sub-h">No framework. No boilerplate. Just createClaw and go.</p>
+  <div class="code-block">
+    <div class="code-header">app.js</div>
+    <div class="code-body">
+<span class="kw">const</span> { <span class="fn">createClaw</span> } = <span class="fn">require</span>(<span class="str">'agentic-claw'</span>)
 
-  <section>
-    <h2><span>#</span> Library</h2>
-    <pre><span class="keyword">const</span> { createClaw } = <span class="func">require</span>(<span class="string">'agentic-claw'</span>)
+<span class="kw">const</span> claw = <span class="fn">createClaw</span>({ <span class="prop">apiKey</span>: <span class="str">'sk-...'</span> })
 
-<span class="keyword">const</span> claw = <span class="func">createClaw</span>({
-  apiKey: <span class="string">'sk-...'</span>,
-  provider: <span class="string">'anthropic'</span>,
-  knowledge: <span class="keyword">true</span>,
+<span class="kw">const</span> r = <span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'What is quantum computing?'</span>)
+<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'Tell me more'</span>)  <span class="cmt">// remembers context</span></div>
+  </div>
+
+  <div class="code-block" style="margin-top: 16px;">
+    <div class="code-header">Multi-session + Knowledge</div>
+    <div class="code-body">
+<span class="kw">const</span> claw = <span class="fn">createClaw</span>({
+  <span class="prop">apiKey</span>: <span class="str">'sk-...'</span>,
+  <span class="prop">knowledge</span>: <span class="typ">true</span>,
 })
 
-<span class="comment">// Teach it something</span>
-<span class="keyword">await</span> claw.<span class="func">learn</span>(<span class="string">'docs'</span>, longDocument)
+<span class="cmt">// Teach it — knowledge shared across sessions</span>
+<span class="kw">await</span> claw.<span class="fn">learn</span>(<span class="str">'docs'</span>, longDocument)
 
-<span class="comment">// Chat — auto: memory → recall → LLM → store</span>
-<span class="keyword">const</span> result = <span class="keyword">await</span> claw.<span class="func">chat</span>(<span class="string">'What does the doc say?'</span>)
+<span class="cmt">// Chat — auto: recall → LLM → store</span>
+<span class="kw">await</span> claw.<span class="fn">chat</span>(<span class="str">'What does the doc say about X?'</span>)
 
-<span class="comment">// Multi-session</span>
-<span class="keyword">const</span> alice = claw.<span class="func">session</span>(<span class="string">'alice'</span>)
-<span class="keyword">const</span> bob = claw.<span class="func">session</span>(<span class="string">'bob'</span>)
-<span class="keyword">await</span> alice.<span class="func">chat</span>(<span class="string">'Hi'</span>)  <span class="comment">// isolated conversation</span></pre>
-  </section>
+<span class="cmt">// Multi-session — isolated conversations</span>
+<span class="kw">const</span> alice = claw.<span class="fn">session</span>(<span class="str">'alice'</span>)
+<span class="kw">const</span> bob = claw.<span class="fn">session</span>(<span class="str">'bob'</span>)
+<span class="kw">await</span> alice.<span class="fn">chat</span>(<span class="str">'My name is Alice'</span>)
+<span class="kw">await</span> bob.<span class="fn">chat</span>(<span class="str">"What's Alice's name?"</span>)  <span class="cmt">// doesn't know</span></div>
+  </div>
 
-  <section>
-    <h2><span>#</span> Features</h2>
-    <div class="features">
-      <div class="feature">
-        <h3>🧠 Auto Memory</h3>
-        <p>Conversations automatically stored and trimmed. Multi-session with isolation.</p>
-      </div>
-      <div class="feature">
-        <h3>🔍 Knowledge</h3>
-        <p>Learn documents, recall relevant context. Local TF-IDF or OpenAI embeddings.</p>
-      </div>
-      <div class="feature">
-        <h3>🛠 Tools</h3>
-        <p>Custom tool registration. Built-in search and code execution.</p>
-      </div>
-      <div class="feature">
-        <h3>⚡ Streaming</h3>
-        <p>Real-time token streaming with proxy support for GFW.</p>
-      </div>
-      <div class="feature">
-        <h3>💓 Heartbeat</h3>
-        <p>Periodic callbacks and scheduled tasks. Your agent stays alive.</p>
-      </div>
-      <div class="feature">
-        <h3>📦 Zero Deps</h3>
-        <p>Peers: agentic-core + agentic-memory. No transitive dependencies.</p>
+  <div class="code-block" style="margin-top: 16px;">
+    <div class="code-header">Lifecycle — heartbeat + schedule</div>
+    <div class="code-body">
+<span class="cmt">// Heartbeat — periodic check-in</span>
+claw.<span class="fn">heartbeat</span>(() <span class="kw">=></span> {
+  console.<span class="fn">log</span>(<span class="str">'Still alive'</span>)
+}, <span class="typ">60000</span>)
+
+<span class="cmt">// Schedule — recurring tasks</span>
+claw.<span class="fn">schedule</span>(<span class="str">'5m'</span>, () <span class="kw">=></span> {
+  console.<span class="fn">log</span>(<span class="str">'Every 5 minutes'</span>)
+})
+
+<span class="cmt">// Events</span>
+claw.<span class="fn">on</span>(<span class="str">'token'</span>, d <span class="kw">=></span> process.stdout.<span class="fn">write</span>(d.text))
+claw.<span class="fn">on</span>(<span class="str">'error'</span>, e <span class="kw">=></span> console.<span class="fn">error</span>(e))</div>
+  </div>
+</section>
+
+<!-- Architecture -->
+<section class="arch-section wrap">
+  <h2>How it works</h2>
+  <p class="sub-h">claw wires the building blocks. You just call chat().</p>
+  <div class="arch-diagram">
+    <div class="arch-label">your app</div>
+    <div class="arch-row">
+      <div class="arch-layer" style="border-color: var(--text-3); opacity: 0.6;">
+        <span class="al-name">CLI / Web / Paw / Your App</span>
       </div>
     </div>
-  </section>
-
-  <section>
-    <h2><span>#</span> Architecture</h2>
-    <div class="arch">
-      <div class="layer">Your App / CLI / Web Demo / Paw</div>
-      <div class="dim">↓</div>
-      <div class="layer">agentic-claw</div>
-      <div>createClaw() · chat() · session() · heartbeat()</div>
-      <div class="dim">↓</div>
-      <div style="display: flex; justify-content: center; gap: 40px;">
-        <div><span class="layer">agentic-core</span><br><span class="dim">LLM · tools · schema</span></div>
-        <div><span class="layer">agentic-memory</span><br><span class="dim">conversation · knowledge</span></div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-label">runtime</div>
+    <div class="arch-row">
+      <div class="arch-layer main">
+        <span class="al-icon">🦀</span>
+        <span class="al-name">agentic-claw</span>
+        <span class="al-desc">— chat · session · heartbeat</span>
       </div>
     </div>
-  </section>
-</div>
+    <div class="arch-arrow">↓</div>
+    <div class="arch-label">building blocks</div>
+    <div class="arch-row">
+      <div class="arch-layer">
+        <span class="al-icon">⚡</span>
+        <span class="al-name">core</span>
+        <span class="al-desc">— LLM · tools · schema</span>
+      </div>
+      <div class="arch-layer">
+        <span class="al-icon">🧠</span>
+        <span class="al-name">memory</span>
+        <span class="al-desc">— context · knowledge</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features wrap" id="features">
+  <h2>What's inside</h2>
+  <div class="feat-grid">
+    <div class="feat">
+      <h3>🧠 Auto Memory</h3>
+      <p>Every conversation automatically stored, trimmed, and managed. No manual history threading. Just chat.</p>
+    </div>
+    <div class="feat">
+      <h3>🔍 Knowledge Recall</h3>
+      <p>Learn documents once, recall relevant context on every chat. Local TF-IDF or OpenAI embeddings.</p>
+    </div>
+    <div class="feat">
+      <h3>👥 Multi-Session</h3>
+      <p>Isolated conversations, shared knowledge. Each session has its own history but taps the same knowledge base.</p>
+    </div>
+    <div class="feat">
+      <h3>💓 Heartbeat + Schedule</h3>
+      <p>Periodic callbacks and scheduled tasks. Your agent stays alive and can do work between conversations.</p>
+    </div>
+    <div class="feat">
+      <h3>🔌 Streaming</h3>
+      <p>Token-by-token streaming with event callbacks. Proxy support for GFW and CORS. Works everywhere.</p>
+    </div>
+    <div class="feat">
+      <h3>📦 Zero Dependencies</h3>
+      <p>Peers: agentic-core + agentic-memory. No transitive deps. No build step. Works in Node and browser.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Compare -->
+<section class="compare wrap">
+  <h2>How it compares</h2>
+  <div class="cmp-grid">
+    <div class="cmp hd"></div>
+    <div class="cmp hd">LangChain</div>
+    <div class="cmp hd">Vercel AI SDK</div>
+    <div class="cmp hd" style="color:var(--accent)">agentic-claw</div>
+
+    <div class="cmp lb">Install size</div>
+    <div class="cmp lo">~80MB</div>
+    <div class="cmp lo">~20MB</div>
+    <div class="cmp hi">~30KB</div>
+
+    <div class="cmp lb">Dependencies</div>
+    <div class="cmp lo">200+</div>
+    <div class="cmp lo">40+</div>
+    <div class="cmp hi">2 peers</div>
+
+    <div class="cmp lb">Memory</div>
+    <div class="cmp lo">Extra package</div>
+    <div class="cmp lo">Manual</div>
+    <div class="cmp hi">Built in</div>
+
+    <div class="cmp lb">Knowledge/RAG</div>
+    <div class="cmp lo">Extra setup</div>
+    <div class="cmp lo">Manual</div>
+    <div class="cmp hi">learn() + recall()</div>
+
+    <div class="cmp lb">CLI</div>
+    <div class="cmp lo">None</div>
+    <div class="cmp lo">None</div>
+    <div class="cmp hi">Built in</div>
+
+    <div class="cmp lb">Time to first agent</div>
+    <div class="cmp lo">~1 hour</div>
+    <div class="cmp lo">~30 min</div>
+    <div class="cmp hi">~2 min</div>
+  </div>
+</section>
 
 <footer>
-  <div class="container">
-    <a href="https://momomo-agent.github.io/agentic/">agentic</a> family — zero dependency AI infrastructure
+  <div class="wrap">
+    MIT · <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a> · <a href="https://www.npmjs.com/package/agentic-claw">npm</a> · Part of <a href="https://momomo-agent.github.io/agentic/">agentic</a>
   </div>
 </footer>
 
