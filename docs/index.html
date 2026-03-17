@@ -121,36 +121,6 @@
     .install code b { color: var(--accent); font-weight: 500; }
     .install .cp { color: var(--text-3); font-size: 11px; }
 
-    /* ── CLI demo ── */
-    .cli-section { padding: 60px 0 80px; }
-    .cli-section h2 {
-      font-family: var(--serif); font-size: 30px; font-weight: 400;
-      letter-spacing: -0.5px; text-align: center; margin-bottom: 12px;
-    }
-    .cli-section .sub-h {
-      text-align: center; font-size: 13px; color: var(--text-3); margin-bottom: 32px;
-    }
-    .terminal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; overflow: hidden;
-    }
-    .terminal-header {
-      padding: 10px 16px; background: #111; display: flex; align-items: center; gap: 8px;
-    }
-    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .terminal-dot.r { background: #ff5f57; }
-    .terminal-dot.y { background: #febc2e; }
-    .terminal-dot.g { background: #28c840; }
-    .terminal-title { font-size: 12px; color: var(--text-3); margin-left: 8px; }
-    .terminal-body {
-      padding: 20px 22px; font-size: 13px; line-height: 1.8;
-    }
-    .t-prompt { color: var(--accent); }
-    .t-cmd { color: var(--text); }
-    .t-out { color: var(--text-2); }
-    .t-dim { color: var(--text-3); }
-    .t-gap { display: block; height: 16px; }
-
     /* ── Code section ── */
     .code-section { padding: 40px 0 80px; }
     .code-section h2 {
@@ -269,7 +239,7 @@
   <div class="links">
     <a href="#usage">Usage</a>
     <a href="#features">Features</a>
-    <a href="https://github.com/momomo-agent/claw-cli">CLI</a>
+    <a href="https://momomo-agent.github.io/claw-cli/">CLI</a>
     <a href="https://github.com/momomo-agent/agentic-claw">GitHub</a>
   </div>
 </nav>
@@ -293,40 +263,6 @@
   <div class="install fu fu4" onclick="navigator.clipboard.writeText('npm i agentic-claw');this.querySelector('.cp').textContent='Copied!'">
     <code>$ <b>npm</b> i agentic-claw agentic-core agentic-memory</code>
     <span class="cp">copy</span>
-  </div>
-</section>
-
-<!-- CLI (claw-cli) -->
-<section class="cli-section wrap" id="cli">
-  <h2>claw-cli — <a href="https://github.com/momomo-agent/claw-cli" style="color:var(--accent)">separate package</a></h2>
-  <p class="sub-h">First product built on agentic-claw. Install: <code style="color:var(--accent)">npm i -g claw-cli</code></p>
-
-  <div class="terminal">
-    <div class="terminal-header">
-      <div class="terminal-dot r"></div>
-      <div class="terminal-dot y"></div>
-      <div class="terminal-dot g"></div>
-      <span class="terminal-title">terminal</span>
-    </div>
-    <div class="terminal-body">
-<span class="t-prompt">$</span> <span class="t-cmd">claw "What is quantum computing?"</span>
-<span class="t-out">Quantum computing uses qubits that can exist in superposition,</span>
-<span class="t-out">enabling parallel computation at a fundamentally different scale...</span>
-<span class="t-gap"></span>
-<span class="t-prompt">$</span> <span class="t-cmd">claw -i</span>
-<span class="t-dim">claw v0.1.0 — type /quit to exit</span>
-<span class="t-gap"></span>
-<span class="t-prompt">&gt;</span> <span class="t-cmd">Tell me about qubits</span>
-<span class="t-out">Qubits are the fundamental unit of quantum information...</span>
-<span class="t-gap"></span>
-<span class="t-prompt">&gt;</span> <span class="t-cmd">What did I just ask?</span>
-<span class="t-out">You asked about qubits — I remember our conversation.</span>
-<span class="t-gap"></span>
-<span class="t-prompt">$</span> <span class="t-cmd">cat report.md | claw "summarize in 3 bullets"</span>
-<span class="t-out">• Revenue grew 23% year-over-year</span>
-<span class="t-out">• Cloud division became the largest segment</span>
-<span class="t-out">• Guidance raised for Q3</span>
-    </div>
   </div>
 </section>
 
@@ -485,7 +421,7 @@ claw.<span class="fn">on</span>(<span class="str">'error'</span>, e <span class=
     <div class="cmp lb">CLI</div>
     <div class="cmp lo">None</div>
     <div class="cmp lo">None</div>
-    <div class="cmp hi"><a href="https://github.com/momomo-agent/claw-cli">claw-cli</a></div>
+    <div class="cmp hi"><a href="https://momomo-agent.github.io/claw-cli/">claw-cli</a></div>
 
     <div class="cmp lb">Time to first agent</div>
     <div class="cmp lo">~1 hour</div>
