@@ -12,6 +12,16 @@
  *   const s2 = claw.session('bob')
  *   await s1.chat('Hi')  // isolated conversation
  *
+ * Skills:
+ *   const claw = createClaw({
+ *     apiKey: 'sk-...',
+ *     skills: [weatherSkill, searchSkill],  // skill objects
+ *     skillConfig: { tavilyKey: '...' },    // shared config for skills
+ *   })
+ *   // Skills auto-expand to tools. Skill format:
+ *   // { name: 'weather', tools: [{ name, description, parameters, execute }] }
+ *   // Tools with requiresConfig(cfg) are auto-filtered.
+ *
  * Browser:
  *   <script src="agentic-core/agentic-agent.js"></script>
  *   <script src="agentic-memory/memory.js"></script>
@@ -68,6 +78,63 @@
     }
   }
 
+  // ── Skill system ──────────────────────────────────────────────────
+
+  /**
+   * Expand skills into tools array.
+   * Skill format: { name: string, tools: [{ name, description, parameters, execute, requiresConfig? }] }
+   * Tools with requiresConfig(cfg) that returns false are filtered out.
+   */
+  function expandSkills(skills, skillConfig = {}) {
+    const expanded = []
+    const seen = new Set()
+
+    for (const skill of skills) {
+      if (!skill || !Array.isArray(skill.tools)) continue
+      for (const tool of skill.tools) {
+        // Skip tools whose required config is missing
+        if (typeof tool.requiresConfig === 'function' && !tool.requiresConfig(skillConfig)) continue
+        // Dedupe by tool name (first registration wins)
+        if (seen.has(tool.name)) continue
+        seen.add(tool.name)
+        expanded.push({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+          execute: (input) => tool.execute(input, skillConfig),
+        })
+      }
+    }
+    return expanded
+  }
+
+  // ── Built-in skills ──────────────────────────────────────────────
+
+  const builtinSkills = {
+    calculate: {
+      name: 'calculate',
+      tools: [{
+        name: 'calculate',
+        description: 'Evaluate a mathematical expression. Supports +, -, *, /, ^, %, parentheses, and Math functions.',
+        parameters: {
+          type: 'object',
+          properties: {
+            expression: { type: 'string', description: 'Math expression (e.g. "125 * 0.85", "Math.sqrt(144)")' },
+          },
+          required: ['expression'],
+        },
+        execute: async (input) => {
+          try {
+            const expr = input.expression.replace(/\^/g, '**').replace(/(\d)%/g, '($1/100)')
+            const result = new Function(`"use strict"; return (${expr})`)()
+            if (typeof result !== 'number' || !isFinite(result)) return { error: 'Not a finite number', result: String(result) }
+            return { expression: input.expression, result: Number(result.toPrecision(12)) }
+          } catch (e) { return { error: e.message } }
+        },
+      }],
+    },
+  }
+
   // ── createClaw ───────────────────────────────────────────────────
 
   function createClaw(options = {}) {
@@ -79,6 +146,8 @@
       proxyUrl = null,
       systemPrompt = null,
       tools = [],
+      skills = [],
+      skillConfig = {},
       knowledge = false,
       embedProvider = 'local',
       embedApiKey = null,
@@ -89,6 +158,20 @@
     } = options
 
     if (!apiKey) throw new Error('apiKey is required')
+
+    // Resolve skills: strings → builtins, objects → as-is
+    const resolvedSkills = skills.map(s => {
+      if (typeof s === 'string') {
+        if (builtinSkills[s]) return builtinSkills[s]
+        console.warn(`[claw] Unknown built-in skill: ${s}`)
+        return null
+      }
+      return s
+    }).filter(Boolean)
+
+    // Expand skills into tools, merge with explicit tools
+    const skillTools = expandSkills(resolvedSkills, skillConfig)
+    const allTools = [...tools, ...skillTools]
 
     const { core, memory } = resolveDeps()
     if (!memory) throw new Error('agentic-memory not found. Install or include via <script>')
@@ -190,7 +273,7 @@
           proxyUrl: proxyUrl || undefined,
           history: sessionMem.history(),
           system: sys || undefined,
-          tools: chatOpts.tools || tools,
+          tools: chatOpts.tools || allTools,
           stream,
           ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
         }, emitFn)
@@ -251,6 +334,26 @@
         if (!_sharedKnowledge) throw new Error('Knowledge not enabled')
         await _sharedKnowledge.forget(id)
         return this
+      },
+
+      /** Add a skill at runtime */
+      use(skill) {
+        const s = typeof skill === 'string' ? builtinSkills[skill] : skill
+        if (!s || !Array.isArray(s.tools)) {
+          console.warn('[claw] Invalid skill:', skill)
+          return this
+        }
+        resolvedSkills.push(s)
+        // Re-expand and merge
+        const fresh = expandSkills(resolvedSkills, skillConfig)
+        allTools.length = tools.length // keep explicit tools
+        allTools.push(...fresh)
+        return this
+      },
+
+      /** List registered skills */
+      listSkills() {
+        return resolvedSkills.map(s => ({ name: s.name, tools: s.tools.map(t => t.name) }))
       },
 
       /** Register heartbeat callback */
@@ -317,5 +420,5 @@
     return claw
   }
 
-  return { createClaw }
+  return { createClaw, builtinSkills, expandSkills }
 })
