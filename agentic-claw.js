@@ -209,6 +209,7 @@
           system: chatOpts.system,
           tools: chatOpts.tools,
           stream: chatOpts.stream ?? stream,
+          ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
         }, chatOpts.emit).then(r => ({
           answer: r.answer || r.content || '',
           usage: r.usage,

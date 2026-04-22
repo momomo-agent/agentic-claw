@@ -605,6 +605,235 @@ async function runTests() {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // 28. Config passthrough — all constructor options
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 28. All constructor options ---')
+  {
+    resetMock()
+    const claw = createClaw({
+      apiKey: 'k', provider: 'openai', baseUrl: 'https://x.api',
+      model: 'gpt-4', proxyUrl: 'https://proxy', systemPrompt: 'Be brief.',
+      maxTokens: 2000, stream: false,
+    })
+    await claw.chat('test')
+    const cfg = mockAskCalls[0].config
+    assert(cfg.proxyUrl === 'https://proxy', 'proxyUrl passed')
+    assert(cfg.stream === false, 'stream=false passed')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 29. Conductor options from claw
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 29. Conductor options ---')
+  {
+    resetMock()
+    mockAskResult = {
+      answer: `I'll do it.\n` + '`'.repeat(3) + 'intents\n[{"action":"create","goal":"Test"}]\n' + '`'.repeat(3),
+    }
+    const spawned = []
+    const claw = createClaw({
+      apiKey: 'k',
+      conductor: 'dispatch',
+      dispatchMode: 'code',
+      maxSlots: 2,
+      maxTurnBudget: 15,
+      maxTokenBudget: 50000,
+      onWorkerStart: (task, abort, opts) => {
+        spawned.push({ task, opts })
+        return new Promise(() => {})
+      },
+    })
+    assert(claw.conductor.getState().strategy === 'dispatch', 'conductor: dispatch strategy')
+    const r = await claw.chat('do it')
+    await new Promise(r => setTimeout(r, 50))
+    assert(spawned.length === 1, 'conductor: worker spawned')
+    assert(typeof spawned[0].opts.beforeTurn === 'function', 'conductor: beforeTurn in opts')
+    assert(typeof spawned[0].opts.afterTurn === 'function', 'conductor: afterTurn in opts')
+    assert(Array.isArray(spawned[0].opts.tools), 'conductor: tools in opts')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 30. searchApiKey per-call option
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 30. searchApiKey ---')
+  {
+    resetMock()
+    const claw = createClaw({ apiKey: 'k' })
+    await claw.chat('search', { searchApiKey: 'sk-123' }, () => {})
+    const cfg = mockAskCalls[0].config
+    assert(cfg.searchApiKey === 'sk-123', 'searchApiKey passed through')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 31. Session properties
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 31. Session properties ---')
+  {
+    resetMock()
+    const claw = createClaw({ apiKey: 'k' })
+    const s = claw.session('test-session')
+    assert(s.id === 'test-session', 'session.id correct')
+    assert(s.memory !== undefined, 'session.memory exists')
+    assert(typeof s.chat === 'function', 'session.chat exists')
+
+    // Session chat works
+    const r = await s.chat('hello')
+    assert(r.answer === 'mock answer', 'session.chat returns answer')
+    assert(r.messages.length > 0, 'session.chat returns messages')
+    assert(r.intents !== undefined, 'session.chat returns intents')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 32. use() with invalid skill
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 32. use() invalid skill ---')
+  {
+    const claw = createClaw({ apiKey: 'k' })
+    const before = claw.listSkills().length
+    claw.use('nonexistent_skill_xyz')
+    assert(claw.listSkills().length === before, 'use() invalid skill: no change')
+    claw.use(null)
+    assert(claw.listSkills().length === before, 'use() null: no change')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 33. chat() error handling
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 33. Error handling ---')
+  {
+    mockAskResult = { answer: 'ok' }
+    globalThis.agenticAsk = async () => { throw new Error('LLM down') }
+    const claw = createClaw({ apiKey: 'k' })
+    const errors = []
+    claw.on('error', (e) => errors.push(e))
+    let threw = false
+    try { await claw.chat('hello') } catch (e) { threw = e.message === 'LLM down' }
+    assert(threw, 'chat() throws on LLM error')
+    assert(errors.length === 1, 'error event emitted')
+    claw.destroy()
+    // Restore mock
+    globalThis.agenticAsk = async function mockAsk(input, config, emit) {
+      mockAskCalls.push({ input, config, emit })
+      if (emit) emit('token', { text: mockAskResult.answer })
+      return mockAskResult
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 34. knowledgeInfo() when enabled
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 34. knowledgeInfo enabled ---')
+  {
+    const claw = createClaw({ apiKey: 'k', knowledge: true })
+    const info = claw.knowledgeInfo()
+    assert(info !== null, 'knowledgeInfo: not null when enabled')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 35. Multiple skills + custom skill object
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 35. Custom skill object ---')
+  {
+    const customSkill = {
+      name: 'custom',
+      tools: [
+        { name: 'custom_tool', description: 'Custom', parameters: {}, execute: async () => 'custom result' },
+      ],
+    }
+    const claw = createClaw({ apiKey: 'k', skills: ['calculate', customSkill] })
+    const skills = claw.listSkills()
+    assert(skills.length === 2, 'Two skills registered')
+    assert(skills[0].name === 'calculate', 'First is calculate')
+    assert(skills[1].name === 'custom', 'Second is custom')
+    assert(skills[1].tools.includes('custom_tool'), 'Custom tool listed')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 36. schedule() string patterns
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 36. Schedule string patterns ---')
+  {
+    const claw = createClaw({ apiKey: 'k' })
+    // All valid patterns
+    claw.schedule('1s', () => {})
+    claw.schedule('5m', () => {})
+    claw.schedule('1h', () => {})
+    claw.schedule('1d', () => {})
+
+    // Invalid patterns
+    let threw1 = false, threw2 = false, threw3 = false
+    try { claw.schedule('abc', () => {}) } catch { threw1 = true }
+    try { claw.schedule('5x', () => {}) } catch { threw2 = true }
+    try { claw.schedule('', () => {}) } catch { threw3 = true }
+    assert(threw1, 'schedule: abc throws')
+    assert(threw2, 'schedule: 5x throws')
+    assert(threw3, 'schedule: empty throws')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 37. conductor.getState() from claw
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 37. conductor access ---')
+  {
+    resetMock()
+    const claw = createClaw({ apiKey: 'k' })
+    assert(claw.conductor !== null, 'conductor accessible')
+    const state = claw.conductor.getState()
+    assert(state.strategy === 'single', 'default strategy is single')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 38. chat() return shape
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 38. chat() return shape ---')
+  {
+    resetMock()
+    const claw = createClaw({ apiKey: 'k' })
+    const r = await claw.chat('hello')
+    assert(typeof r.answer === 'string', 'return: answer is string')
+    assert(Array.isArray(r.intents), 'return: intents is array')
+    assert(typeof r.rounds === 'number', 'return: rounds is number')
+    assert(Array.isArray(r.messages), 'return: messages is array')
+    assert('data' in r, 'return: data field exists')
+    claw.destroy()
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 39. calculate builtin — edge cases
+  // ═══════════════════════════════════════════════════════════════
+
+  console.log('\n--- 39. Calculate edge cases ---')
+  {
+    const calc = builtinSkills.calculate.tools[0]
+    const r1 = await calc.execute({ expression: 'Math.sqrt(16)' })
+    assert(r1.result === 4, 'calc: sqrt(16)=4')
+    const r2 = await calc.execute({ expression: '1/0' })
+    assert(r2.error !== undefined, 'calc: 1/0 is not finite')
+    const r3 = await calc.execute({ expression: 'invalid+++' })
+    assert(r3.error !== undefined, 'calc: syntax error')
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // Summary
   // ═══════════════════════════════════════════════════════════════
 
