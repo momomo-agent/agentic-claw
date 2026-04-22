@@ -188,6 +188,49 @@
     let _heartbeatInterval = null
     let _schedules = []
 
+    // --- Conductor: dispatch engine ---
+    let conductorMod
+    try {
+      if (typeof require === 'function') conductorMod = require('agentic-conductor')
+    } catch {}
+    if (!conductorMod && typeof globalThis !== 'undefined') {
+      conductorMod = globalThis.AgenticConductor
+    }
+
+    // AI adapter: wraps askFn into the interface Conductor expects
+    const _conductorAI = {
+      chat(messages, chatOpts = {}) {
+        const lastMsg = messages[messages.length - 1]?.content || ''
+        return askFn(lastMsg, {
+          provider, apiKey,
+          baseUrl: baseUrl || undefined,
+          model: model || undefined,
+          proxyUrl: proxyUrl || undefined,
+          history: messages.slice(0, -1),
+          system: chatOpts.system,
+          tools: chatOpts.tools,
+          stream: chatOpts.stream ?? stream,
+        }, chatOpts.emit).then(r => ({
+          answer: r.answer || r.content || '',
+          usage: r.usage,
+        }))
+      }
+    }
+
+    const _conductor = conductorMod
+      ? conductorMod.createConductor({
+          ai: _conductorAI,
+          tools: allTools,
+          systemPrompt,
+          strategy: options.conductor || 'single',
+          dispatchMode: options.dispatchMode || 'llm',
+          onWorkerStart: options.onWorkerStart || null,
+          maxSlots: options.maxSlots,
+          maxTurnBudget: options.maxTurnBudget,
+          maxTokenBudget: options.maxTokenBudget,
+        })
+      : null  // fallback: no conductor, use askFn directly
+
     // Shared knowledge store (across all sessions)
     const sharedKnowledgeOpts = knowledge ? {
       knowledge: true,
@@ -256,7 +299,7 @@
       let sys = systemPrompt || ''
       if (knowledgeContext) sys += knowledgeContext
 
-      // Call LLM via agentic-core
+      // Call LLM via Conductor (single or dispatch mode)
       const emitFn = (event, data) => {
         if (emit) emit(event, data)
         if (event === 'token') events.emit('token', data)
@@ -265,20 +308,34 @@
       }
 
       try {
-        const result = await askFn(input, {
-          provider,
-          apiKey,
-          baseUrl: baseUrl || undefined,
-          model: model || undefined,
-          proxyUrl: proxyUrl || undefined,
-          history: sessionMem.history(),
-          system: sys || undefined,
-          tools: chatOpts.tools || allTools,
-          stream,
-          ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
-        }, emitFn)
+        let answer, intents = []
 
-        const answer = result.answer || result.content || ''
+        if (_conductor) {
+          // Use Conductor for the LLM call
+          const conductorResult = await _conductor.chat(input, {
+            system: sys || undefined,
+            tools: chatOpts.tools || allTools,
+            stream,
+            emit: emitFn,
+            ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
+          })
+          answer = conductorResult.reply || ''
+          intents = conductorResult.intents || []
+        } else {
+          // Fallback: direct askFn (no conductor installed)
+          const result = await askFn(input, {
+            provider, apiKey,
+            baseUrl: baseUrl || undefined,
+            model: model || undefined,
+            proxyUrl: proxyUrl || undefined,
+            history: sessionMem.history(),
+            system: sys || undefined,
+            tools: chatOpts.tools || allTools,
+            stream,
+            ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
+          }, emitFn)
+          answer = result.answer || result.content || ''
+        }
 
         // Store assistant response
         await sessionMem.assistant(answer)
@@ -287,8 +344,9 @@
 
         return {
           answer,
-          rounds: result.rounds || 1,
-          data: result.data || null,
+          intents,
+          rounds: 1,
+          data: null,
           messages: sessionMem.messages(),
         }
       } catch (error) {
@@ -414,7 +472,11 @@
         for (const [, mem] of sessions) mem.destroy()
         sessions.clear()
         if (_sharedKnowledge) _sharedKnowledge.destroy()
+        if (_conductor) _conductor.destroy()
       },
+
+      /** Access the underlying Conductor (for dispatch mode features) */
+      get conductor() { return _conductor },
     }
 
     return claw
