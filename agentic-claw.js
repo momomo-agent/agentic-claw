@@ -188,12 +188,11 @@
     let _heartbeatInterval = null
     let _schedules = []
 
-    // --- Conductor: dispatch engine ---
+    // --- Conductor: dispatch engine (built-in) ---
     let conductorMod
-    try {
-      if (typeof require === 'function') conductorMod = require('agentic-conductor')
-    } catch {}
-    if (!conductorMod && typeof globalThis !== 'undefined') {
+    if (typeof require === 'function') {
+      conductorMod = require('agentic-conductor')
+    } else if (typeof globalThis !== 'undefined') {
       conductorMod = globalThis.AgenticConductor
     }
 
@@ -217,19 +216,19 @@
       }
     }
 
-    const _conductor = conductorMod
-      ? conductorMod.createConductor({
-          ai: _conductorAI,
-          tools: allTools,
-          systemPrompt,
-          strategy: options.conductor || 'single',
-          dispatchMode: options.dispatchMode || 'llm',
-          onWorkerStart: options.onWorkerStart || null,
-          maxSlots: options.maxSlots,
-          maxTurnBudget: options.maxTurnBudget,
-          maxTokenBudget: options.maxTokenBudget,
-        })
-      : null  // fallback: no conductor, use askFn directly
+    if (!conductorMod) throw new Error('agentic-conductor not found')
+
+    const _conductor = conductorMod.createConductor({
+      ai: _conductorAI,
+      tools: allTools,
+      systemPrompt,
+      strategy: options.conductor || 'single',
+      dispatchMode: options.dispatchMode || 'llm',
+      onWorkerStart: options.onWorkerStart || null,
+      maxSlots: options.maxSlots,
+      maxTurnBudget: options.maxTurnBudget,
+      maxTokenBudget: options.maxTokenBudget,
+    })
 
     // Shared knowledge store (across all sessions)
     const sharedKnowledgeOpts = knowledge ? {
@@ -308,34 +307,17 @@
       }
 
       try {
-        let answer, intents = []
+        // Use Conductor for the LLM call
+        const conductorResult = await _conductor.chat(input, {
+          system: sys || undefined,
+          tools: chatOpts.tools || allTools,
+          stream,
+          emit: emitFn,
+          ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
+        })
 
-        if (_conductor) {
-          // Use Conductor for the LLM call
-          const conductorResult = await _conductor.chat(input, {
-            system: sys || undefined,
-            tools: chatOpts.tools || allTools,
-            stream,
-            emit: emitFn,
-            ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
-          })
-          answer = conductorResult.reply || ''
-          intents = conductorResult.intents || []
-        } else {
-          // Fallback: direct askFn (no conductor installed)
-          const result = await askFn(input, {
-            provider, apiKey,
-            baseUrl: baseUrl || undefined,
-            model: model || undefined,
-            proxyUrl: proxyUrl || undefined,
-            history: sessionMem.history(),
-            system: sys || undefined,
-            tools: chatOpts.tools || allTools,
-            stream,
-            ...chatOpts.searchApiKey ? { searchApiKey: chatOpts.searchApiKey } : {},
-          }, emitFn)
-          answer = result.answer || result.content || ''
-        }
+        const answer = conductorResult.reply || ''
+        const intents = conductorResult.intents || []
 
         // Store assistant response
         await sessionMem.assistant(answer)

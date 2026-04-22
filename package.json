@@ -10,6 +10,9 @@
     "type": "git",
     "url": "git+https://github.com/momomo-agent/agentic-claw.git"
   },
+  "dependencies": {
+    "agentic-conductor": ">=0.1.0"
+  },
   "peerDependencies": {
     "agentic-core": ">=0.2.0",
     "agentic-memory": ">=0.2.0"
